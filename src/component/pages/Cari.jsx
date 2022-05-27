@@ -2,21 +2,20 @@ import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Card, Col, Container, Form, Row, Button } from "react-bootstrap";
 import { Navigate } from "react-router-dom";
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarToggler,
-  Collapse,
-  Nav,
-} from "reactstrap";
+import { Navbar, NavbarBrand, NavbarToggler, Collapse, Nav } from "reactstrap";
+import { addUser } from '../../slices/userSlice';
+import { useDispatch } from "react-redux";
+
 
 const Cari = () => {
+  const dispatch = useDispatch();
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [user, setUser] = useState({});
   const [cars, setCars] = useState([]);
   const capacityField = useRef();
   const isWithDriverField = useRef();
-  const availableAtField = useRef();
+  const availableAtDateField = useRef();
+  const availableAtTimeField = useRef();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +37,13 @@ const Cari = () => {
         const currentUserResponse = currentUserRequest.data;
 
         if (currentUserResponse.status) {
+          dispatch(
+            addUser({
+                user: currentUserResponse.data.user,
+                token: token,
+            })
+        )
+
           setUser(currentUserResponse.data.user);
         }
       } catch (err) {
@@ -58,19 +64,23 @@ const Cari = () => {
   const filtered = async (e) => {
     e.preventDefault();
     try {
+      const dateTime = new Date(
+        `${availableAtDateField.current.value} ${availableAtTimeField.current.value}`
+      );
+
       const dataCars = await axios.get(
-        `http://localhost:8001/cars/filtered?isWithDriver=${isWithDriverField.current.value}&capacity=${capacityField.current.value}&availableAt=${availableAtField.current.value}`
+        `http://localhost:8001/cars/filtered?isWithDriver=${isWithDriverField.current.value}&capacity=${capacityField.current.value}&availableAt=${dateTime.toISOString()}`
       );
 
       const payloadData = await dataCars.data.data.filteredCars;
       console.log(dataCars);
       setCars(payloadData);
-  } catch (err) {
+    } catch (err) {
       console.log(err);
-  }
+    }
   };
   return isLoggedIn ? (
-    //   hider dan navbar
+    //  hider dan navbar
     <>
       <div>
         <Navbar color="light" expand="md" light container header>
@@ -147,6 +157,8 @@ const Cari = () => {
           </div>
         </div>
       </div>
+
+      {/* Form */}
       <div className="container">
         <div className="side">
           <Form onSubmit={(e) => filtered(e)}>
@@ -172,14 +184,14 @@ const Cari = () => {
                     <input
                       type="date"
                       className="form-control"
-                      ref={availableAtField}
+                      ref={availableAtDateField}
                     />
                   </div>
                   <div className="col-md-12 col-lg-3 col-sm-12">
                     <label for="validationCustom04" className="form-label">
                       Waktu Jemput/Ambil
                     </label>
-                    <select className="form-select" id="inputTime">
+                    <select className="form-select" id="inputTime" ref={availableAtTimeField}>
                       <option selected disabled value="">
                         Pilih Waktu
                       </option>
@@ -221,6 +233,7 @@ const Cari = () => {
         </div>
       </div>
 
+      {/* Card view cars */}
       <Container>
         <Row>
           {cars?.map((car) => (
